@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { authApi } from '@/api/endpoints'
 import { setUnauthorizedHandler, tokenStorage } from '@/api/client'
 import type { User } from '@/api/types'
+import { identify, resetIdentity, track } from '@/analytics/analytics'
 import { hasPermission, type Permission } from './permissions'
 
 interface AuthContextValue {
@@ -21,6 +22,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(() => tokenStorage.get() !== null)
 
   const logout = useCallback(() => {
+    if (tokenStorage.get()) track('logged_out')
+    resetIdentity()
     tokenStorage.clear()
     setUser(null)
     queryClient.clear() // don't show the previous user's data to the next one
@@ -31,7 +34,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!tokenStorage.get()) return
     authApi
       .me()
-      .then(setUser)
+      .then((user) => {
+        identify(user)
+        setUser(user)
+      })
       .catch(logout)
       .finally(() => setIsLoading(false))
   }, [logout])
@@ -41,6 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const { token, user } = await authApi.login(email, password)
     tokenStorage.set(token)
+    identify(user)
+    track('logged_in', { role: user.role })
     setUser(user)
   }, [])
 

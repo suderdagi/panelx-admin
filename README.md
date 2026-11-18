@@ -17,6 +17,7 @@ Admin dashboard for an online store. Store staff can follow sales on the dashboa
 - **CSV export** of the filtered order list
 - **Shareable views:** search, filters, sorting and page number live in the URL
 - **Dark mode**, responsive layout, keyboard and screen reader friendly forms, dialogs and tables
+- **Product analytics** with PostHog: typed events for the key actions, pageviews and user identification (off unless a key is configured)
 
 | Orders | Products (dark mode) |
 | --- | --- |
@@ -33,6 +34,7 @@ Admin dashboard for an online store. Store staff can follow sales on the dashboa
 | Forms | React Hook Form + Zod |
 | Routing | React Router 7 |
 | Mock backend | Mock Service Worker (MSW) |
+| Product analytics | PostHog (posthog-js, loaded lazily) |
 | Tests | Vitest, Testing Library |
 | Build / deploy | Vite, GitHub Actions, GitHub Pages |
 
@@ -59,10 +61,33 @@ There is no separate backend. [MSW](https://mswjs.io) runs a service worker that
 
 The same handlers run in Node during tests, so tests exercise real HTTP requests instead of mocked functions.
 
+## Product analytics
+
+The app sends product events to [PostHog](https://posthog.com) so I can see how the dashboard is actually used: which features people reach, where a flow is dropped, and whether a change improved anything.
+
+**What is tracked.** Every event and its properties are declared once in [`src/analytics/analytics.ts`](src/analytics/analytics.ts). `track()` is typed against that list, so a misspelled event name or a missing property doesn't compile.
+
+| Event | Properties | Question it answers |
+| --- | --- | --- |
+| `logged_in` / `logged_out` | `role` | How many people use the panel, and with which roles? |
+| `$pageview` | path | Which screens are used, and which are never opened? |
+| `dashboard_range_changed` | `days` | Is the 30-day default the right one? |
+| `order_opened` → `order_status_changed` | `status`, `from`, `to` | Funnel: how many opened orders actually get processed? |
+| `orders_exported` | `rows`, `status_filter` | Who still needs data outside the panel, and why? |
+| `product_created` / `product_updated` / `product_deleted` | `category` | How is the catalog maintained? |
+| `team_role_changed` | `to` | Is role management used at all? |
+
+**Privacy choices.** Users are identified by id and role only, never by name or email. Pageviews send the path without the query string, so search terms typed by staff are not collected. Autocapture and session recording are off: only the events above are sent, which also keeps the data clean enough to build funnels on.
+
+**Turning it on.** Analytics is a no-op without a key, so local development, tests and forks send nothing. Set `VITE_POSTHOG_KEY` (see [`.env.example`](.env.example)) locally, or the `POSTHOG_KEY` repository variable for the GitHub Pages build. The SDK is loaded with a dynamic `import()`, so it isn't in the initial bundle, and when no key is set at build time it isn't bundled at all.
+
+**Testing it.** The analytics module sends events to a replaceable sink. Tests plug in a recording sink and check, through the real UI, that a login identifies the user without personal data, that pageviews never contain the query string, and that an order status change is sent with its old and new status.
+
 ## Project structure
 
 ```
 src/
+├── analytics/      # typed PostHog events, pageview tracking
 ├── api/            # fetch wrapper, typed endpoints, shared types
 ├── auth/           # auth context, route guards, permission table
 ├── components/     # layout, DataTable, SearchInput, small UI kit (Button, Modal, Field…)
@@ -85,6 +110,6 @@ npm run build
 ## Tests
 
 - **Unit:** permissions, CSV escaping (including spreadsheet formula injection), product validation, dashboard aggregation, that chart days are labelled correctly in any time zone, and search that ignores case and Turkish accents
-- **Integration:** the whole app is rendered with Testing Library against the MSW handlers: login and redirect back to the requested page, order filtering and search (including the search box following the address), status changes, product form validation and creation, expired sessions, rollback of a failed optimistic update, opening an order from the keyboard, what each role can and cannot do
+- **Integration:** the whole app is rendered with Testing Library against the MSW handlers: login and redirect back to the requested page, order filtering and search (including the search box following the address), status changes, product form validation and creation, expired sessions, rollback of a failed optimistic update, opening an order from the keyboard, what each role can and cannot do, and which analytics events are sent (and that they contain no personal data)
 
 CI runs lint, type check and tests on every push; a second workflow deploys `main` to GitHub Pages.

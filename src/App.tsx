@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { PageviewTracker } from '@/analytics/PageviewTracker'
 import { AuthProvider } from '@/auth/AuthContext'
 import { RequireAuth, RequirePermission } from '@/auth/guards'
 import { AppLayout } from '@/components/layout/AppLayout'
@@ -13,21 +14,24 @@ import { TeamPage } from '@/pages/TeamPage'
 
 export function AppRoutes() {
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route element={<RequireAuth />}>
-        <Route element={<AppLayout />}>
-          <Route index element={<DashboardPage />} />
-          <Route path="orders" element={<OrdersPage />} />
-          <Route path="products" element={<ProductsPage />} />
-          <Route path="customers" element={<CustomersPage />} />
-          <Route element={<RequirePermission permission="users:manage" />}>
-            <Route path="team" element={<TeamPage />} />
+    <>
+      <PageviewTracker />
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route element={<RequireAuth />}>
+          <Route element={<AppLayout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="orders" element={<OrdersPage />} />
+            <Route path="products" element={<ProductsPage />} />
+            <Route path="customers" element={<CustomersPage />} />
+            <Route element={<RequirePermission permission="users:manage" />}>
+              <Route path="team" element={<TeamPage />} />
+            </Route>
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
-          <Route path="*" element={<NotFoundPage />} />
         </Route>
-      </Route>
-    </Routes>
+      </Routes>
+    </>
   )
 }
 

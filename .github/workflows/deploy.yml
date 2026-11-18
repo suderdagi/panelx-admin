@@ -30,6 +30,10 @@ jobs:
       - run: npm run build
         env:
           GITHUB_PAGES: 'true'
+          # PostHog project keys are public (they ship in the browser bundle), so a repository variable is enough.
+          # Without it the build simply has analytics turned off.
+          VITE_POSTHOG_KEY: ${{ vars.POSTHOG_KEY }}
+          VITE_POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
       # GitHub Pages has no SPA fallback; serving index.html as 404.html makes deep links work
       - run: cp dist/index.html dist/404.html
       - uses: actions/upload-pages-artifact@v3

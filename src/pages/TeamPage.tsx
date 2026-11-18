@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { track } from '@/analytics/analytics'
 import { usersApi } from '@/api/endpoints'
 import { ApiError } from '@/api/client'
 import type { Role, User } from '@/api/types'
@@ -27,6 +28,7 @@ export function TeamPage() {
       queryClient.setQueryData<User[]>(['users'], (list) => list?.map((u) => (u.id === id ? { ...u, role } : u)))
       return { previous }
     },
+    onSuccess: (_updated, { role }) => track('team_role_changed', { to: role }),
     onError: (_error, _vars, context) => queryClient.setQueryData(['users'], context?.previous),
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
   })

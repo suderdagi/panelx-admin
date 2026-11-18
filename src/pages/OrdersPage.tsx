@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Download, ShoppingCart } from 'lucide-react'
+import { track } from '@/analytics/analytics'
 import { ordersApi } from '@/api/endpoints'
 import { ApiError } from '@/api/client'
 import { ORDER_STATUSES, type Order, type OrderStatus } from '@/api/types'
@@ -67,6 +68,7 @@ export function OrdersPage() {
         { header: 'Total', value: (o) => o.total },
       ])
       downloadCsv(`orders-${new Date().toISOString().slice(0, 10)}.csv`, csv)
+      track('orders_exported', { rows: all.length, status_filter: status ?? 'all' })
     } finally {
       setExporting(false)
     }
@@ -119,7 +121,10 @@ export function OrdersPage() {
             isFetching={orders.isFetching}
             onPageChange={(p) => update({ page: p }, false)}
             onSortChange={(s) => update({ sort: s })}
-            onRowClick={setSelected}
+            onRowClick={(order: Order) => {
+              track('order_opened', { status: order.status })
+              setSelected(order)
+            }}
             empty={<EmptyState icon={<ShoppingCart size={32} />} title="No orders found" description="Try a different search or status." />}
           />
         )}
@@ -137,6 +142,7 @@ function OrderDrawer({ order, onClose, onUpdated }: { order: Order | null; onClo
   const mutation = useMutation({
     mutationFn: (status: OrderStatus) => ordersApi.updateStatus(order!.id, status),
     onSuccess: (updated) => {
+      if (order) track('order_status_changed', { from: order.status, to: updated.status })
       onUpdated(updated)
       queryClient.invalidateQueries({ queryKey: ['orders'] })
       queryClient.invalidateQueries({ queryKey: ['stats'] })
