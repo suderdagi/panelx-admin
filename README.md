@@ -111,5 +111,6 @@ npm run build
 
 - **Unit:** permissions, CSV escaping (including spreadsheet formula injection), product validation, dashboard aggregation, that chart days are labelled correctly in any time zone, and search that ignores case and Turkish accents
 - **Integration:** the whole app is rendered with Testing Library against the MSW handlers: login and redirect back to the requested page, order filtering and search (including the search box following the address), status changes, product form validation and creation, expired sessions, rollback of a failed optimistic update, opening an order from the keyboard, what each role can and cannot do, and which analytics events are sent (and that they contain no personal data)
+- **API contract:** the mock API is also called directly, without the interface, to check what a real backend would have to do: 401 without a sign-in, 403 per role, 400 for bad input, 404 for unknown ids and 409 for conflicts (a duplicate SKU, a delivered order, changing your own role).
 
 CI runs lint, type check and tests on every push; a second workflow deploys `main` to GitHub Pages.
