@@ -7,6 +7,13 @@ export function SearchInput({ value, onChange, placeholder }: { value: string; o
   const [text, setText] = useState(value)
   const debounced = useDebouncedValue(text, 300)
 
+  // The address can change without any typing (sidebar link, browser back button): show it
+  useEffect(() => {
+    if (value !== debounced) setText(value)
+    // only react to the address, not to what is being typed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value])
+
   useEffect(() => {
     if (debounced !== value) onChange(debounced)
     // only react to the debounced text

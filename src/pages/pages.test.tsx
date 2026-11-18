@@ -50,6 +50,21 @@ describe('orders', () => {
     await waitFor(() => expect(within(table).getAllByRole('row')).toHaveLength(2))
   })
 
+  it('empties the search box when the filter is reset from outside', async () => {
+    const user = userEvent.setup()
+    renderApp('/orders?search=no-such-order', 'viewer')
+
+    const input = await screen.findByLabelText('Search order, customer or city')
+    expect(input).toHaveValue('no-such-order')
+    expect(await screen.findByText('No orders found')).toBeInTheDocument()
+
+    // The sidebar link opens /orders without any filter
+    await user.click(screen.getByRole('link', { name: 'Orders' }))
+
+    await waitFor(() => expect(input).toHaveValue(''))
+    await waitFor(() => expect(screen.queryByText('No orders found')).not.toBeInTheDocument())
+  })
+
   it('lets an editor change the status of an order', async () => {
     const user = userEvent.setup()
     const order = db.orders.find((o) => o.status === 'pending')!
