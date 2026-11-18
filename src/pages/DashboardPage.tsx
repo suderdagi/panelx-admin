@@ -126,7 +126,7 @@ export function DashboardPage() {
             <Card>
               <CardHeader title="Orders by status" description={`${formatNumber(totalStatus)} orders`} />
               <div className="space-y-4 p-5">
-                {data.ordersByStatus
+                {[...data.ordersByStatus]
                   .sort((a, b) => b.count - a.count)
                   .map(({ status, count }) => (
                     <div key={status}>
