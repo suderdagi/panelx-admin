@@ -16,7 +16,7 @@ Admin dashboard for an online store. Store staff can follow sales on the dashboa
 - **Role based access:** `admin`, `editor` and `viewer` see different actions; the API enforces the same rules
 - **CSV export** of the filtered order list
 - **Shareable views:** search, filters, sorting and page number live in the URL
-- **Dark mode**, responsive layout, keyboard and screen reader friendly forms and dialogs
+- **Dark mode**, responsive layout, keyboard and screen reader friendly forms, dialogs and tables
 
 | Orders | Products (dark mode) |
 | --- | --- |
@@ -85,6 +85,6 @@ npm run build
 ## Tests
 
 - **Unit:** permissions, CSV escaping (including spreadsheet formula injection), product validation, dashboard aggregation, and that chart days are labelled correctly in any time zone
-- **Integration:** the whole app is rendered with Testing Library against the MSW handlers: login and redirect back to the requested page, order filtering and search (including the search box following the address), status changes, product form validation and creation, what each role can and cannot do
+- **Integration:** the whole app is rendered with Testing Library against the MSW handlers: login and redirect back to the requested page, order filtering and search (including the search box following the address), status changes, product form validation and creation, expired sessions, rollback of a failed optimistic update, opening an order from the keyboard, what each role can and cannot do
 
 CI runs lint, type check and tests on every push; a second workflow deploys `main` to GitHub Pages.

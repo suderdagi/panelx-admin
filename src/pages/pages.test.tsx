@@ -1,7 +1,10 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { renderApp } from '@/test/render'
+import { http, HttpResponse } from 'msw'
+import { tokenStorage } from '@/api/client'
 import { db } from '@/mocks/db'
+import { server } from '@/mocks/server'
+import { renderApp } from '@/test/render'
 
 describe('login', () => {
   it('redirects to login, signs in and shows the dashboard', async () => {
@@ -27,6 +30,24 @@ describe('login', () => {
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Invalid email or password')
+  })
+})
+
+describe('expired sessions', () => {
+  it('sends a visitor with an unknown token to the login page', async () => {
+    tokenStorage.set('mock-token-999') // no such user
+    renderApp('/orders')
+
+    expect(await screen.findByRole('heading', { name: 'Sign in to PanelX' })).toBeInTheDocument()
+    expect(tokenStorage.get()).toBeNull()
+  })
+
+  it('signs the user out when the API answers 401 during use', async () => {
+    server.use(http.get('/api/orders', () => HttpResponse.json({ message: 'Your session has expired.' }, { status: 401 })))
+    renderApp('/orders', 'viewer')
+
+    expect(await screen.findByRole('heading', { name: 'Sign in to PanelX' })).toBeInTheDocument()
+    expect(tokenStorage.get()).toBeNull()
   })
 })
 
@@ -75,6 +96,18 @@ describe('orders', () => {
     await user.selectOptions(within(dialog).getByLabelText('Status'), 'shipped')
 
     await waitFor(() => expect(db.orders.find((o) => o.id === order.id)?.status).toBe('shipped'))
+  })
+
+  it('opens an order from the keyboard', async () => {
+    const user = userEvent.setup()
+    const order = db.orders.find((o) => o.status === 'pending')!
+    renderApp(`/orders?search=${encodeURIComponent(order.number)}`, 'viewer')
+
+    const row = (await screen.findByText(order.number)).closest('tr')!
+    row.focus()
+    await user.keyboard('{Enter}')
+
+    expect(await screen.findByRole('dialog')).toHaveTextContent(`Order ${order.number}`)
   })
 
   it('does not let a viewer change orders or export', async () => {
@@ -134,5 +167,24 @@ describe('team', () => {
     expect(await screen.findByLabelText('Role of Sude Erdağı')).toBeDisabled()
     await user.selectOptions(screen.getByLabelText('Role of Zeynep Arslan'), 'editor')
     await waitFor(() => expect(db.users.find((u) => u.id === 3)?.role).toBe('editor'))
+  })
+
+  it('rolls the role back when the API refuses the change', async () => {
+    const user = userEvent.setup()
+    // The refetch after the failed update fails too, so only the rollback can bring the old value back
+    let reads = 0
+    server.use(
+      http.patch('/api/users/:id', () => HttpResponse.json({ message: 'Server is busy' }, { status: 500 })),
+      http.get('/api/users', () => (++reads === 1 ? HttpResponse.json(db.users) : HttpResponse.json({ message: 'Down' }, { status: 500 })))
+    )
+    renderApp('/team', 'admin')
+
+    const select = await screen.findByLabelText('Role of Zeynep Arslan')
+    expect(select).toHaveValue('viewer')
+    await user.selectOptions(select, 'editor')
+
+    expect(await screen.findByText('Server is busy')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByLabelText('Role of Zeynep Arslan')).toHaveValue('viewer'))
+    expect(db.users.find((u) => u.id === 3)?.role).toBe('viewer')
   })
 })
