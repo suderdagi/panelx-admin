@@ -1,3 +1,4 @@
+import type { CaptureResult, PostHogConfig } from 'posthog-js'
 import type { OrderStatus, Role, User } from '@/api/types'
 
 /**
@@ -55,9 +56,38 @@ export function resetIdentity() {
   sink.reset()
 }
 
-/** Paths only, never the query string, so search terms typed by users are not collected. */
+/** Paths only, never the query string, so search terms typed by users are not collected (see scrubEvent for the address PostHog adds itself). */
 export function trackPageview(pathname: string) {
   sink.capture('$pageview', { $pathname: pathname })
+}
+
+/** `https://host/orders?search=x#top` becomes `https://host/orders`. Anything that isn't a web address is left alone. */
+function withoutQueryAndHash(value: unknown): unknown {
+  if (typeof value === 'string') return /^https?:\/\//i.test(value) ? value.split(/[?#]/, 1)[0] : value
+  if (Array.isArray(value)) return value.map(withoutQueryAndHash)
+  if (value && Object.getPrototypeOf(value) === Object.prototype) {
+    return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, withoutQueryAndHash(inner)]))
+  }
+  return value // numbers, booleans, null, dates
+}
+
+/**
+ * posthog-js adds the full address of the page to every event ($current_url, $session_entry_url,
+ * $initial_current_url ...), and in this app the address carries what staff typed in the search
+ * box (?search=...). This runs on each event just before it is sent and trims every address to
+ * its path, so no search term leaves the browser.
+ */
+export function scrubEvent(event: CaptureResult): CaptureResult {
+  return withoutQueryAndHash(event) as CaptureResult
+}
+
+/** PostHog settings that don't depend on the environment. Exported so a test can run the real SDK with them. */
+export const posthogOptions: Partial<PostHogConfig> = {
+  capture_pageview: false, // sent by <PageviewTracker /> on every route change
+  autocapture: false, // only the explicit events above, so the data stays clean
+  disable_session_recording: true,
+  person_profiles: 'identified_only',
+  before_send: scrubEvent,
 }
 
 /**
@@ -71,11 +101,8 @@ export async function initAnalytics() {
 
   const { default: posthog } = await import('posthog-js')
   posthog.init(key, {
+    ...posthogOptions,
     api_host: import.meta.env.VITE_POSTHOG_HOST || 'https://eu.i.posthog.com',
-    capture_pageview: false, // sent by <PageviewTracker /> on every route change
-    autocapture: false, // only the explicit events above, so the data stays clean
-    disable_session_recording: true,
-    person_profiles: 'identified_only',
   })
   setAnalyticsSink({
     capture: (event, properties) => posthog.capture(event, properties),

@@ -77,11 +77,11 @@ The app sends product events to [PostHog](https://posthog.com) so I can see how 
 | `product_created` / `product_updated` / `product_deleted` | `category` | How is the catalog maintained? |
 | `team_role_changed` | `to` | Is role management used at all? |
 
-**Privacy choices.** Users are identified by id and role only, never by name or email. Pageviews send the path without the query string, so search terms typed by staff are not collected. Autocapture and session recording are off: only the events above are sent, which also keeps the data clean enough to build funnels on.
+**Privacy choices.** Users are identified by id and role only, never by name or email. Pageviews send the path without the query string, so search terms typed by staff are not collected. posthog-js also attaches the full page address to every event on its own, so a `before_send` hook (`scrubEvent`) trims every address to its path before anything is sent. Autocapture and session recording are off: only the events above are sent, which also keeps the data clean enough to build funnels on.
 
 **Turning it on.** Analytics is a no-op without a key, so local development, tests and forks send nothing. Set `VITE_POSTHOG_KEY` (see [`.env.example`](.env.example)) locally, or the `POSTHOG_KEY` repository variable for the GitHub Pages build. The SDK is loaded with a dynamic `import()`, so it isn't in the initial bundle, and when no key is set at build time it isn't bundled at all.
 
-**Testing it.** The analytics module sends events to a replaceable sink. Tests plug in a recording sink and check, through the real UI, that a login identifies the user without personal data, that pageviews never contain the query string, and that an order status change is sent with its old and new status.
+**Testing it.** The analytics module sends events to a replaceable sink. Tests plug in a recording sink and check, through the real UI, that a login identifies the user without personal data, that pageviews never contain the query string, and that an order status change is sent with its old and new status. A second test runs the real posthog-js SDK with the app's settings on a page like `/orders?search=...` and checks that nothing it would send contains the query string.
 
 ## Project structure
 
