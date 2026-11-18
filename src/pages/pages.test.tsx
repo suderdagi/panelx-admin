@@ -146,6 +146,14 @@ describe('products', () => {
     await waitFor(() => expect(db.products.some((p) => p.sku === 'HOM-9999' && p.price === 249.9)).toBe(true))
   })
 
+  it('goes back to the last page when the page number is too high', async () => {
+    renderApp('/products?page=99', 'viewer')
+
+    expect(await screen.findByText('Page 4 / 4')).toBeInTheDocument()
+    // the rows of the last page arrive after the step back
+    await waitFor(() => expect(screen.queryByText('No products found')).not.toBeInTheDocument())
+  })
+
   it('hides delete for editors and shows it for admins', async () => {
     renderApp('/products', 'editor')
     await screen.findAllByRole('button', { name: /^Edit / })

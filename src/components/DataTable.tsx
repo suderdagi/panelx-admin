@@ -7,7 +7,7 @@ import {
   type SortingState,
 } from '@tanstack/react-table'
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { Spinner } from './ui/Spinner'
 
 interface DataTableProps<T> {
@@ -63,6 +63,12 @@ export function DataTable<T>({
   const pageCount = Math.max(1, Math.ceil(total / pageSize))
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1
   const to = Math.min(page * pageSize, total)
+
+  // Deleting the last row of the last page, or opening an old link, can leave the page number
+  // past the end: once the data has settled, step back to the last page that exists
+  useEffect(() => {
+    if (!isFetching && page > pageCount) onPageChange(pageCount)
+  }, [isFetching, page, pageCount, onPageChange])
 
   return (
     <div>
