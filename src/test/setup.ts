@@ -16,9 +16,6 @@ afterEach(() => {
 })
 afterAll(() => server.close())
 
-// jsdom resolves relative fetch URLs against this origin
-globalThis.location.href = 'http://localhost/'
-
 // APIs jsdom does not implement
 HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
   this.setAttribute('open', '')
