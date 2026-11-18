@@ -3,6 +3,7 @@ import { toCsv } from './csv'
 import { productSchema } from './schemas'
 import { computeStats } from '@/mocks/stats'
 import { createDb } from '@/mocks/db'
+import { matches } from '@/mocks/query'
 import { formatDayLabel } from './format'
 
 /** Runs `fn` as if the computer were in another time zone (Node re-reads TZ when it is assigned). */
@@ -75,5 +76,17 @@ describe('dashboard day labels', () => {
     for (const zone of ['Europe/Istanbul', 'America/Los_Angeles', 'Pacific/Auckland']) {
       expect(inTimeZone(zone, () => formatDayLabel('2026-11-18'))).toBe('18 Nov')
     }
+  })
+})
+
+describe('search matching', () => {
+  it('finds Turkish text however it is typed', () => {
+    for (const typed of ['istanbul', 'İstanbul', 'ISTANBUL', 'Istanbul']) {
+      expect(matches(typed, 'İstanbul')).toBe(true)
+    }
+    expect(matches('elazig', 'Elazığ')).toBe(true)
+    expect(matches('yilmaz', 'Ahmet Yılmaz')).toBe(true)
+    expect(matches('kaya', 'Ahmet Yılmaz')).toBe(false)
+    expect(matches('', 'anything')).toBe(true)
   })
 })

@@ -4,13 +4,22 @@ import type { Paginated } from '@/api/types'
 export function readListParams(url: URL) {
   const page = Math.max(1, Number(url.searchParams.get('page')) || 1)
   const pageSize = Math.min(100, Math.max(1, Number(url.searchParams.get('pageSize')) || 10))
-  const search = url.searchParams.get('search')?.trim().toLocaleLowerCase('tr') ?? ''
+  const search = url.searchParams.get('search')?.trim() ?? ''
   const [sortField, sortDir] = (url.searchParams.get('sort') ?? '').split(':')
   return { page, pageSize, search, sortField, sortDir: sortDir === 'asc' ? 1 : -1 }
 }
 
+/**
+ * Lowercases the Turkish way (I becomes ı, İ becomes i) and drops accents, so "istanbul",
+ * "İstanbul" and "Istanbul" all match, and so does "elazig" for "Elazığ".
+ * Plain toLowerCase() turns "İ" into "i" plus a combining dot, which breaks searches.
+ */
+const fold = (text: string) =>
+  text.toLocaleLowerCase('tr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ı/g, 'i')
+
 export function matches(search: string, ...values: (string | number)[]) {
-  return !search || values.some((v) => String(v).toLocaleLowerCase('tr').includes(search))
+  const needle = fold(search)
+  return !needle || values.some((v) => fold(String(v)).includes(needle))
 }
 
 export function sortBy<T>(items: T[], field: string | undefined, dir: number): T[] {
