@@ -3,6 +3,19 @@ import { toCsv } from './csv'
 import { productSchema } from './schemas'
 import { computeStats } from '@/mocks/stats'
 import { createDb } from '@/mocks/db'
+import { formatDayLabel } from './format'
+
+/** Runs `fn` as if the computer were in another time zone (Node re-reads TZ when it is assigned). */
+function inTimeZone<T>(timeZone: string, fn: () => T): T {
+  const previous = process.env.TZ
+  process.env.TZ = timeZone
+  try {
+    return fn()
+  } finally {
+    if (previous === undefined) delete process.env.TZ
+    else process.env.TZ = previous
+  }
+}
 
 describe('permissions', () => {
   it('gives admins everything and viewers nothing', () => {
@@ -46,5 +59,21 @@ describe('computeStats', () => {
     const dailySum = stats.revenueByDay.reduce((sum, d) => sum + d.revenue, 0)
     expect(dailySum).toBeCloseTo(stats.revenue.value, 0)
     expect(stats.ordersByStatus.find((s) => s.status === 'cancelled')?.count ?? 0).toBeGreaterThanOrEqual(0)
+  })
+})
+
+describe('dashboard day labels', () => {
+  it('label every day with its local calendar date, ending with today', () => {
+    // 13:00 in Istanbul (UTC+3) on 18 November
+    const now = Date.parse('2026-11-18T10:00:00Z')
+    const days = inTimeZone('Europe/Istanbul', () => computeStats(createDb(now), 7, now).revenueByDay.map((d) => d.date))
+
+    expect(days).toEqual(['2026-11-12', '2026-11-13', '2026-11-14', '2026-11-15', '2026-11-16', '2026-11-17', '2026-11-18'])
+  })
+
+  it('shows a calendar date the same way in every time zone', () => {
+    for (const zone of ['Europe/Istanbul', 'America/Los_Angeles', 'Pacific/Auckland']) {
+      expect(inTimeZone(zone, () => formatDayLabel('2026-11-18'))).toBe('18 Nov')
+    }
   })
 })

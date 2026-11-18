@@ -20,7 +20,7 @@ import { Card, CardHeader } from '@/components/ui/Card'
 import { StatusBadge } from '@/components/ui/Badge'
 import { ErrorState } from '@/components/ui/EmptyState'
 import { Spinner } from '@/components/ui/Spinner'
-import { formatChange, formatCurrency, formatNumber, timeAgo, statusLabel } from '@/lib/format'
+import { formatChange, formatCurrency, formatDayLabel, formatNumber, timeAgo, statusLabel } from '@/lib/format'
 
 const RANGES = [7, 30, 90] as const
 
@@ -46,8 +46,6 @@ function KpiCard({ label, kpi, format }: { label: string; kpi: Kpi; format: (n: 
     </Card>
   )
 }
-
-const shortDate = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
 
 export function DashboardPage() {
   const [params, setParams] = useSearchParams()
@@ -112,11 +110,11 @@ export function DashboardPage() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.2} vertical={false} />
-                    <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fontSize: 12, fill: '#94a3b8' }} tickLine={false} axisLine={false} minTickGap={24} />
+                    <XAxis dataKey="date" tickFormatter={formatDayLabel} tick={{ fontSize: 12, fill: '#94a3b8' }} tickLine={false} axisLine={false} minTickGap={24} />
                     <YAxis tickFormatter={(v) => `₺${Math.round(v / 1000)}k`} tick={{ fontSize: 12, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={48} />
                     <Tooltip
                       formatter={(value: number) => [formatCurrency(value), 'Revenue']}
-                      labelFormatter={(label: string) => shortDate(label)}
+                      labelFormatter={(label: string) => formatDayLabel(label)}
                       contentStyle={{ borderRadius: 8, fontSize: 12 }}
                     />
                     <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2} fill="url(#revenue)" />

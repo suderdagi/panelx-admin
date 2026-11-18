@@ -1,8 +1,6 @@
 import type { DashboardStats, Kpi, Order } from '@/api/types'
 import type { Db } from './db'
 
-const DAY = 24 * 60 * 60 * 1000
-
 const round = (n: number) => Math.round(n * 100) / 100
 
 function kpi(current: number, previous: number): Kpi {
@@ -12,16 +10,25 @@ function kpi(current: number, previous: number): Kpi {
   }
 }
 
-function startOfDay(time: number) {
+/** Local midnight of the day that is `offsetDays` days away from `time`. Counting calendar days (not 24 h blocks) keeps it correct across daylight saving changes. */
+function startOfDay(time: number, offsetDays = 0) {
   const d = new Date(time)
   d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() + offsetDays)
   return d.getTime()
+}
+
+/** "2026-11-18" for the local calendar day of `time` (toISOString would give the UTC day, which can be the day before). */
+function dayKey(time: number) {
+  const d = new Date(time)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
 /** Aggregates the numbers shown on the dashboard for the last `range` days. */
 export function computeStats(db: Db, range: number, now = Date.now()): DashboardStats {
-  const from = startOfDay(now) - (range - 1) * DAY
-  const previousFrom = from - range * DAY
+  const from = startOfDay(now, -(range - 1))
+  const previousFrom = startOfDay(now, -(2 * range - 1))
 
   const counted = (o: Order) => o.status !== 'cancelled'
   const inRange = (o: Order, start: number, end: number) => {
@@ -40,10 +47,11 @@ export function computeStats(db: Db, range: number, now = Date.now()): Dashboard
     }).length
 
   const revenueByDay = Array.from({ length: range }, (_, i) => {
-    const dayStart = from + i * DAY
-    const dayOrders = current.filter((o) => inRange(o, dayStart, dayStart + DAY))
+    const dayStart = startOfDay(now, -(range - 1) + i)
+    const dayEnd = startOfDay(now, -(range - 1) + i + 1)
+    const dayOrders = current.filter((o) => inRange(o, dayStart, dayEnd))
     return {
-      date: new Date(dayStart).toISOString().slice(0, 10),
+      date: dayKey(dayStart),
       revenue: round(sum(dayOrders)),
       orders: dayOrders.length,
     }

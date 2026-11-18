@@ -26,3 +26,7 @@ export function timeAgo(iso: string, now = Date.now()) {
 }
 
 export const statusLabel = (status: string) => status.charAt(0).toUpperCase() + status.slice(1)
+
+/** A "2026-11-18" string is a calendar date, not a moment. Formatting it in UTC keeps the viewer's time zone from moving it to the day before or after. */
+export const formatDayLabel = (isoDate: string) =>
+  new Date(isoDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'UTC' })
