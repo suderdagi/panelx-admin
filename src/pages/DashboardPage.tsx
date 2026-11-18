@@ -13,6 +13,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { track } from '@/analytics/analytics'
 import { ordersApi, statsApi } from '@/api/endpoints'
 import type { Kpi } from '@/api/types'
 import { PageHeader } from '@/components/layout/AppLayout'
@@ -62,7 +63,10 @@ export function DashboardPage() {
       {RANGES.map((r) => (
         <button
           key={r}
-          onClick={() => setParams({ range: String(r) }, { replace: true })}
+          onClick={() => {
+            if (r !== range) track('dashboard_range_changed', { days: r })
+            setParams({ range: String(r) }, { replace: true })
+          }}
           aria-pressed={r === range}
           className={clsx(
             'rounded-md px-3 py-1.5 text-sm font-medium',

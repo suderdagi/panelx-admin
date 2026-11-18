@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
+import { initAnalytics } from './analytics/analytics'
 import './index.css'
 
 async function startMockApi() {
@@ -13,7 +14,7 @@ async function startMockApi() {
   })
 }
 
-startMockApi().then(() => {
+Promise.all([startMockApi(), initAnalytics().catch(() => {})]).then(() => {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <App />

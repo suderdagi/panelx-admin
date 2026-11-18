@@ -4,6 +4,7 @@ import { createColumnHelper } from '@tanstack/react-table'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Package, Pencil, Plus, Trash2 } from 'lucide-react'
+import { track } from '@/analytics/analytics'
 import { productsApi } from '@/api/endpoints'
 import { ApiError } from '@/api/client'
 import { CATEGORIES, type Product } from '@/api/types'
@@ -49,6 +50,7 @@ export function ProductsPage() {
   const remove = useMutation({
     mutationFn: (id: number) => productsApi.remove(id),
     onSuccess: () => {
+      track('product_deleted')
       setDeleting(null)
       queryClient.invalidateQueries({ queryKey: ['products'] })
     },
@@ -192,7 +194,8 @@ export function ProductFormModal({ product, onClose }: { product: Product | 'new
 
   const save = useMutation({
     mutationFn: (input: ProductInput) => (product === 'new' || !product ? productsApi.create(input) : productsApi.update(product.id, input)),
-    onSuccess: () => {
+    onSuccess: (_saved, input) => {
+      track(isNew ? 'product_created' : 'product_updated', { category: input.category })
       queryClient.invalidateQueries({ queryKey: ['products'] })
       onClose()
     },
