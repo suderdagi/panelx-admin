@@ -15,8 +15,6 @@ function realSdk() {
       ...posthogOptions,
       api_host: 'http://localhost:9',
       persistence: 'localStorage',
-      advanced_disable_flags: true,
-      disable_surveys: true,
       before_send: [
         ...app,
         (event) => {

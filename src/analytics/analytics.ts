@@ -87,6 +87,14 @@ export const posthogOptions: Partial<PostHogConfig> = {
   autocapture: false, // only the explicit events above, so the data stays clean
   disable_session_recording: true,
   person_profiles: 'identified_only',
+  // This app uses none of PostHog's other features, so they are switched off explicitly
+  // and "only the events above are sent" stays true.
+  advanced_disable_flags: true,
+  disable_surveys: true,
+  capture_exceptions: false,
+  capture_performance: false,
+  capture_heatmaps: false,
+  capture_dead_clicks: false,
   before_send: scrubEvent,
 }
 

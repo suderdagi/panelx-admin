@@ -77,7 +77,7 @@ The app sends product events to [PostHog](https://posthog.com) so I can see how 
 | `product_created` / `product_updated` / `product_deleted` | `category` | How is the catalog maintained? |
 | `team_role_changed` | `to` | Is role management used at all? |
 
-**Privacy choices.** Users are identified by id and role only, never by name or email. Pageviews send the path without the query string, so search terms typed by staff are not collected. posthog-js also attaches the full page address to every event on its own, so a `before_send` hook (`scrubEvent`) trims every address to its path before anything is sent. Autocapture and session recording are off: only the events above are sent, which also keeps the data clean enough to build funnels on.
+**Privacy choices.** Users are identified by id and role only, never by name or email. Pageviews send the path without the query string, so search terms typed by staff are not collected. posthog-js also attaches the full page address to every event on its own, so a `before_send` hook (`scrubEvent`) trims every address to its path before anything is sent. Autocapture and session recording are off, and so are the PostHog features this app doesn't use (feature flags, surveys, exception capture, web vitals, heatmaps, dead clicks): only the events above are sent, which also keeps the data clean enough to build funnels on.
 
 **Turning it on.** Analytics is a no-op without a key, so local development, tests and forks send nothing. Set `VITE_POSTHOG_KEY` (see [`.env.example`](.env.example)) locally, or the `POSTHOG_KEY` repository variable for the GitHub Pages build. The SDK is loaded with a dynamic `import()`, so it isn't in the initial bundle, and when no key is set at build time it isn't bundled at all.
 
