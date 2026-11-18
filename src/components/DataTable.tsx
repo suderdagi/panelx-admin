@@ -103,7 +103,22 @@ export function DataTable<T>({
               <tr
                 key={row.id}
                 onClick={onRowClick ? () => onRowClick(row.original) : undefined}
-                className={clsx(onRowClick && 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50')}
+                // Clickable rows must also work from the keyboard: focusable, opened with Enter or Space
+                tabIndex={onRowClick ? 0 : undefined}
+                onKeyDown={
+                  onRowClick
+                    ? (e) => {
+                        if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                          e.preventDefault()
+                          onRowClick(row.original)
+                        }
+                      }
+                    : undefined
+                }
+                className={clsx(
+                  onRowClick &&
+                    'cursor-pointer hover:bg-slate-50 focus-visible:bg-slate-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-indigo-500 dark:hover:bg-slate-800/50 dark:focus-visible:bg-slate-800/50'
+                )}
               >
                 {row.getVisibleCells().map((cell) => (
                   <td key={cell.id} className="whitespace-nowrap px-4 py-3">

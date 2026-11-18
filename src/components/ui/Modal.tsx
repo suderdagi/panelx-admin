@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 
 interface ModalProps {
@@ -16,6 +16,7 @@ interface ModalProps {
  */
 export function Modal({ open, title, onClose, children, footer, side = false }: ModalProps) {
   const ref = useRef<HTMLDialogElement>(null)
+  const titleId = useId() // a fixed id would repeat when two dialogs are on the page
 
   useEffect(() => {
     const dialog = ref.current
@@ -30,7 +31,7 @@ export function Modal({ open, title, onClose, children, footer, side = false }: 
       open={typeof HTMLDialogElement === 'undefined' ? open : undefined}
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
-      aria-labelledby="modal-title"
+      aria-labelledby={titleId}
       className={
         side
           ? 'm-0 ml-auto h-full max-h-full w-full max-w-md bg-white p-0 text-inherit backdrop:bg-slate-900/40 dark:bg-slate-900'
@@ -40,7 +41,7 @@ export function Modal({ open, title, onClose, children, footer, side = false }: 
       {open && (
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-slate-800">
-            <h2 id="modal-title" className="text-base font-semibold">
+            <h2 id={titleId} className="text-base font-semibold">
               {title}
             </h2>
             <button onClick={onClose} aria-label="Close" className="rounded p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
